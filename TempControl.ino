@@ -26,16 +26,16 @@ enum states
 
 void setup(void)
 {
-  #ifdef TEST
-    Serial.begin(9600);
-  #endif
-  
-  state = idle;
-  pinMode(GREEN_LED, OUTPUT);
-  pinMode(RED_LED, OUTPUT);
-  pinMode(BLUE_LED, OUTPUT);
-  pinMode(RELE, OUTPUT);
-  sensors.begin();
+	#ifdef TEST
+		Serial.begin(9600);
+	#endif
+	
+	state = idle;
+	pinMode(GREEN_LED, OUTPUT);
+	pinMode(RED_LED, OUTPUT);
+	pinMode(BLUE_LED, OUTPUT);
+	pinMode(RELE, OUTPUT);
+	sensors.begin();
 }
 
 void loop(void)
@@ -50,14 +50,14 @@ void loop(void)
 		}
 		case hot:
 		{
-			if(!doCooling())//cool down until it chills
+			if(!doCool())//cool down until it chills
 			{
-        //came out from cooling with no success
+				//came out from cooling with no success
 				state = error;
 			}
 			else
 			{
-        //cooling succeeded
+				//cooling succeeded
 				state = cool;
 			}
 			break;
@@ -74,44 +74,48 @@ void loop(void)
 	}
 }
 
-void doIdle(void)
+void doCool(void)
 {
-  #ifdef test
-    Serial.println("Idle");
-    _T("Fan", fanPWM);
-  #endif
+	#ifdef test
+		Serial.println("Idle");
+	#endif
 	digitalWrite(GREEN_LED, HIGH);
 	float temp = readTemp();
 	while( DESIRED_TEMP > temp ) //check we are in desired temp
 	{
-    light("green");
+		light("green");
 		if(DESIRED_TEMP < temp)
 		{
 			// shut EVERYTHING down for a while and check again after a quick nap
-			// TODO: sleep mode for at least 30min and check again
+			// TODO: sleep mode for at least 10min and check again, only blink blue each 8 sec to let know still alive
 		}
-    
-    //check temperature again
-    temp = readTemp();
+		
+		//check temperature again
+		temp = readTemp();
+		
+		#ifdef test
+			_T("Cool. Temp now",temp);
+		#endif
 	}
 }
 
 int doCooling(void)
 {
-  #ifdef
-	  Serial.println("Cooling");
-  #endif
+	#ifdef test
+		Serial.println("Cooling");
+	#endif
 	
-  light("blue");//we got everything up and running
+	light("blue");//we got everything up and running
 	while( DESIRED_TEMP < temp ) //check we are hot
 	{
 		// stay here for as long as it takes to reach the desired temp
-    digitalwrite(RELE, high);
+		digitalwrite(RELE, high);
 		// TODO: implement time count to deside it's been too long cooling
-		// we cant shut shit down but at least ADC and look for other stuff to shut down to save bat
-    delay(60*1000);
-    // TODO: turn back on ADC to read temp
+		delay(60*1000);
 		temp = readTemp();
+		#ifdef test
+			_T("Cooling. Temp now",temp);
+		#endif
 	}
 
 	return 0;
@@ -119,31 +123,25 @@ int doCooling(void)
 
 void doError(void)
 {
+	#ifdef test
+		_T("Error",0);
+	#endif
 	while(1)
 	{
 		light("red");
 		// TODO:go to deep sleep again for N times
-    giState = hot;
+		giState = hot;
 	}
 }
 
 float readTemp(void)
 {
-  sensors.requestTemperatures();
-  return sensors.getTempCByIndex(0);
-  /*
-  float sensor = analogRead(TEMP_SENSOR);
-  _T("sensor", sensor);
-  float voltageFromSensor = sensor * 0.004882814;
-  _T("voltageFromSensor", voltageFromSensor);
-  float celsiusTemp = (voltageFromSensor - 0.5) * 100.0;
-  _T("celsiusTemp", celsiusTemp);
-  return celsiusTemp;
-  */
+	sensors.requestTemperatures();
+	return sensors.getTempCByIndex(0);
 }
 
 void _T(String text, float value)
 {
-  Serial.print(text + " :");
-  Serial.println(value);
+	Serial.print(text + " :");
+	Serial.println(value);
 }
